@@ -17,11 +17,13 @@
 
 package cn.polarismesh.agent.plugin.spring.cloud.common;
 
+import java.util.List;
+import java.util.stream.Stream;
+
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
+import org.springframework.cloud.openfeign.FeignContext;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
-
-import java.util.List;
 
 /**
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -85,7 +87,4 @@ public class ClassNames {
 	 * {@link org.springframework.cloud.loadbalancer.blocking.client.BlockingLoadBalancerClient}
 	 */
 	public static final String BLOCKING_LOADBALANCER_CLIENT = "org.springframework.cloud.loadbalancer.blocking.client.BlockingLoadBalancerClient";
-
-
-	public static final String INTERCEPTING_HTTP_ACCESSOR  = "org.springframework.http.client.support.InterceptingHttpAccessor";
 }

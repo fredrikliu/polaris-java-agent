@@ -17,15 +17,15 @@
 
 package cn.polarismesh.agent.plugin.spring.cloud.interceptor;
 
+import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import cn.polarismesh.agent.core.common.exception.PolarisAgentException;
 import cn.polarismesh.agent.core.extension.interceptor.Interceptor;
 import cn.polarismesh.agent.plugin.spring.cloud.common.Holder;
 import com.tencent.cloud.common.metadata.MetadataContextHolder;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.context.ApplicationContext;
 
-import java.lang.reflect.Field;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.springframework.util.ReflectionUtils;
 
 /**
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -53,7 +53,6 @@ public abstract class BaseInterceptor implements Interceptor {
 	public void onAfter(Object target, Object[] args, Object result, Throwable throwable) {
 
 	}
-
 
 	private void init() {
 		if (initialize.compareAndSet(false, true)) {

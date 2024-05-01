@@ -18,17 +18,15 @@
 package cn.polarismesh.agent.plugin.spring.cloud.common;
 
 import cn.polarismesh.agent.core.common.exception.PolarisAgentException;
+import cn.polarismesh.agent.plugin.spring.cloud.configuration.AgentPolarisRateLimitProperties;
 import com.tencent.cloud.common.metadata.StaticMetadataManager;
 import com.tencent.cloud.common.metadata.config.MetadataLocalProperties;
-import com.tencent.cloud.plugin.lossless.config.LosslessConfigModifier;
-import com.tencent.cloud.plugin.lossless.config.LosslessProperties;
 import com.tencent.cloud.polaris.DiscoveryConfigModifier;
 import com.tencent.cloud.polaris.PolarisDiscoveryConfigModifier;
 import com.tencent.cloud.polaris.PolarisDiscoveryProperties;
+import com.tencent.cloud.polaris.circuitbreaker.common.CircuitBreakerConfigModifier;
 import com.tencent.cloud.polaris.config.ConfigurationModifier;
-import com.tencent.cloud.polaris.config.adapter.PolarisPropertySourceManager;
 import com.tencent.cloud.polaris.config.config.PolarisConfigProperties;
-import com.tencent.cloud.polaris.config.config.PolarisCryptoConfigProperties;
 import com.tencent.cloud.polaris.context.ModifyAddress;
 import com.tencent.cloud.polaris.context.PolarisConfigModifier;
 import com.tencent.cloud.polaris.context.PolarisSDKContextManager;
@@ -38,7 +36,7 @@ import com.tencent.cloud.polaris.extend.consul.ConsulConfigModifier;
 import com.tencent.cloud.polaris.extend.consul.ConsulContextProperties;
 import com.tencent.cloud.polaris.extend.nacos.NacosConfigModifier;
 import com.tencent.cloud.polaris.extend.nacos.NacosContextProperties;
-//import com.tencent.cloud.polaris.router.RouterConfigModifier;
+import com.tencent.cloud.polaris.ratelimit.config.RateLimitConfigModifier;
 import com.tencent.cloud.polaris.router.config.properties.PolarisMetadataRouterProperties;
 import com.tencent.cloud.polaris.router.config.properties.PolarisNearByRouterProperties;
 import com.tencent.cloud.polaris.router.config.properties.PolarisRuleBasedRouterProperties;
@@ -62,7 +60,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
 
 import static com.tencent.cloud.polaris.extend.nacos.NacosContextProperties.DEFAULT_GROUP;
 
@@ -86,15 +88,13 @@ public class Holder {
 
     private static PolarisContextProperties polarisContextProperties;
 
-    private static PolarisCryptoConfigProperties polarisCryptoConfigProperties;
-
     private static PolarisRuleBasedRouterProperties routerProperties;
 
     private static PolarisNearByRouterProperties nearByRouterProperties;
 
-    private static LosslessProperties losslessProperties;
-
     private static PolarisMetadataRouterProperties metadataRouterProperties;
+
+    private static AgentPolarisRateLimitProperties rateLimitProperties;
 
     private static PolarisConfigProperties polarisConfigProperties;
 
@@ -110,8 +110,6 @@ public class Holder {
 
     private static Environment environment;
 
-    private static PolarisPropertySourceManager polarisPropertySourceManager;
-
     private static void initProperties() {
         polarisContextProperties = new PolarisContextProperties();
         discoveryProperties = new PolarisDiscoveryProperties();
@@ -121,13 +119,12 @@ public class Holder {
         routerProperties = new PolarisRuleBasedRouterProperties();
         nearByRouterProperties = new PolarisNearByRouterProperties();
         metadataRouterProperties = new PolarisMetadataRouterProperties();
+        rateLimitProperties = new AgentPolarisRateLimitProperties();
         polarisConfigProperties = new PolarisConfigProperties();
         polarisStatProperties = new PolarisStatProperties();
-        losslessProperties = new LosslessProperties();
         rpcEnhancementReporterProperties = new RpcEnhancementReporterProperties();
-        polarisCryptoConfigProperties = new PolarisCryptoConfigProperties();
+
         discoveryProperties.setService(Holder.getLocalService());
-        polarisPropertySourceManager = new PolarisPropertySourceManager();
     }
 
     public static void init() {
@@ -155,8 +152,6 @@ public class Holder {
             }
             discoveryProperties.setNamespace(namespace);
 
-            polarisContextProperties.setNamespace(namespace);
-            polarisContextProperties.setService(discoveryProperties.getService());
             bindObject("spring.cloud.consul", consulContextProperties, environment);
             bindObject("spring.cloud.nacos.discovery", nacosContextProperties, environment);
 
@@ -165,14 +160,14 @@ public class Holder {
             bindObject("spring.cloud.polaris.router.nearby-router", nearByRouterProperties, environment);
             bindObject("spring.cloud.polaris.router.metadata-router", metadataRouterProperties, environment);
 
-            bindObject("spring.cloud.polaris.config.crypto", polarisCryptoConfigProperties, environment);
+            // 限流规则配置
+            bindObject("spring.cloud.polaris.ratelimit", rateLimitProperties, environment);
+
             // 配置中心
             bindObject("spring.cloud.polaris.config", polarisConfigProperties, environment);
 
             // 监控
             bindObject("spring.cloud.polaris.stat", polarisStatProperties, environment);
-
-            bindObject("spring.cloud.polaris.lossless", losslessProperties, environment);
 
             // rpc 调用增强
             bindObject("spring.cloud.tencent.rpc-enhancement.reporter", rpcEnhancementReporterProperties, environment);
@@ -196,7 +191,7 @@ public class Holder {
 
         Properties properties = new Properties();
 
-        String confPath = Paths.get(CONF_FILE_PATH, "plugin", "spring-cloud-hoxton", "application.properties").toString();
+        String confPath = Paths.get(CONF_FILE_PATH, "plugin", "spring-cloud-2021", "application.properties").toString();
         String cmdVal = System.getProperty("polaris.agent.user.application.conf");
         if (StringUtils.isNotBlank(cmdVal)) {
             confPath = cmdVal;
@@ -230,7 +225,7 @@ public class Holder {
                 logConfig = Holder.class.getClassLoader().getResource("polaris-log4j.xml").getFile();
             }
         }
-        System.setProperty(LoggingConsts.LOGGING_CONFIG_PROPERTY, "jar:" + logConfig);
+        System.setProperty(LoggingConsts.LOGGING_CONFIG_PROPERTY, logConfig);
 
         if (StringUtils.isBlank(polarisContextProperties.getLocalIpAddress())) {
             polarisContextProperties.setLocalIpAddress(environment.getProperty("spring.cloud.client.ip-address"));
@@ -240,10 +235,9 @@ public class Holder {
                 new ModifyAddress(polarisContextProperties),
                 new DiscoveryConfigModifier(discoveryProperties),
                 new PolarisDiscoveryConfigModifier(discoveryProperties),
-       //         new RouterConfigModifier(nearByRouterProperties),
-                //new RateLimitConfigModifier(rateLimitProperties),
-                new StatConfigModifier(polarisStatProperties, environment)
-                //new CircuitBreakerConfigModifier(rpcEnhancementReporterProperties),
+                new RateLimitConfigModifier(rateLimitProperties),
+                new StatConfigModifier(polarisStatProperties, environment),
+                new CircuitBreakerConfigModifier(rpcEnhancementReporterProperties)
         ));
         if (consulContextProperties.isEnabled()) {
             modifiers.add(new ConsulConfigModifier(consulContextProperties));
@@ -251,11 +245,8 @@ public class Holder {
         if (nacosContextProperties.isEnabled()) {
             modifiers.add(new NacosConfigModifier(nacosContextProperties));
         }
-        if (losslessProperties.isEnabled()) {
-            modifiers.add(new LosslessConfigModifier(losslessProperties));
-        }
         if (polarisConfigProperties.isEnabled()) {
-            modifiers.add(new ConfigurationModifier(polarisConfigProperties, polarisCryptoConfigProperties, polarisContextProperties));
+            modifiers.add(new ConfigurationModifier(polarisConfigProperties, polarisContextProperties));
         }
 
         contextManager = new PolarisSDKContextManager(polarisContextProperties, environment, modifiers);
@@ -317,6 +308,10 @@ public class Holder {
         return metadataRouterProperties;
     }
 
+    public static AgentPolarisRateLimitProperties getRateLimitProperties() {
+        return rateLimitProperties;
+    }
+
     public static ConsulContextProperties getConsulContextProperties() {
         return consulContextProperties;
     }
@@ -329,27 +324,11 @@ public class Holder {
         return rpcEnhancementReporterProperties;
     }
 
-    public static PolarisConfigProperties getPolarisConfigProperties() {
-        return polarisConfigProperties;
-    }
-
-    public static PolarisCryptoConfigProperties getPolarisCryptoConfigProperties() {
-        return polarisCryptoConfigProperties;
-    }
-
     public static ServiceRuleManager newServiceRuleManager() {
         return new ServiceRuleManager(getContextManager().getSDKContext(), getContextManager().getConsumerAPI());
     }
 
     public static boolean isAllowDiscovery() {
         return allowDiscovery;
-    }
-
-    public static LosslessProperties getLosslessProperties() {
-        return losslessProperties;
-    }
-
-    public static PolarisPropertySourceManager getPolarisPropertySourceManager() {
-        return polarisPropertySourceManager;
     }
 }
