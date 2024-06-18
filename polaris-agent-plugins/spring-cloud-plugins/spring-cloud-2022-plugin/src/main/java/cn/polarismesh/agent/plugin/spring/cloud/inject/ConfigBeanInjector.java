@@ -53,6 +53,10 @@ public class ConfigBeanInjector implements BeanInjector {
 	@Override
 	public void onBootstrapStartup(Object configurationParser, Constructor<?> configClassCreator, Method processConfigurationClass, BeanDefinitionRegistry registry, Environment environment) {
 		LOGGER.info("[PolarisJavaAgent] success to inject bootstrap bean definitions for module {}", getModule());
+		Object polarisConfigBootstrapAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, PolarisConfigBootstrapAutoConfiguration.class, "polarisConfigBootstrapAutoConfiguration");
+		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisConfigBootstrapAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
+		registry.registerBeanDefinition("polarisConfigBootstrapAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
+				PolarisConfigBootstrapAutoConfiguration.class).getBeanDefinition());
 	}
 
 	@Override
@@ -65,10 +69,6 @@ public class ConfigBeanInjector implements BeanInjector {
 		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisContractProperties, Constant.DEFAULT_EXCLUSION_FILTER);
 		registry.registerBeanDefinition("polarisContractProperties", BeanDefinitionBuilder.genericBeanDefinition(
 				PolarisContractProperties.class).getBeanDefinition());
-		Object polarisConfigBootstrapAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, PolarisConfigBootstrapAutoConfiguration.class, "polarisConfigBootstrapAutoConfiguration");
-		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisConfigBootstrapAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
-		registry.registerBeanDefinition("polarisConfigBootstrapAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
-				PolarisConfigBootstrapAutoConfiguration.class).getBeanDefinition());
 		Object polarisConfigAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, PolarisConfigAutoConfiguration.class, "polarisConfigAutoConfiguration");
 		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisConfigAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
 		registry.registerBeanDefinition("polarisConfigAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(

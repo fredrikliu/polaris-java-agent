@@ -34,6 +34,12 @@ import com.tencent.cloud.polaris.circuitbreaker.config.PolarisCircuitBreakerFeig
 import com.tencent.cloud.polaris.circuitbreaker.config.ReactivePolarisCircuitBreakerAutoConfiguration;
 import com.tencent.cloud.polaris.context.config.PolarisContextAutoConfiguration;
 import com.tencent.cloud.polaris.contract.config.PolarisContractPropertiesAutoConfiguration;
+import com.tencent.cloud.polaris.discovery.PolarisDiscoveryAutoConfiguration;
+import com.tencent.cloud.polaris.discovery.PolarisDiscoveryClientConfiguration;
+import com.tencent.cloud.polaris.discovery.reactive.PolarisReactiveDiscoveryClientConfiguration;
+import com.tencent.cloud.polaris.discovery.refresh.PolarisRefreshConfiguration;
+import com.tencent.cloud.polaris.endpoint.PolarisDiscoveryEndpointAutoConfiguration;
+import com.tencent.cloud.polaris.registry.PolarisServiceRegistryAutoConfiguration;
 import com.tencent.cloud.polaris.router.config.properties.PolarisNearByRouterProperties;
 import com.tencent.cloud.polaris.DiscoveryPropertiesBootstrapAutoConfiguration;
 import com.tencent.cloud.polaris.router.config.properties.PolarisRuleBasedRouterProperties;
@@ -64,24 +70,6 @@ public class RouterBeanInjector implements BeanInjector {
 	@Override
 	public void onBootstrapStartup(Object configurationParser, Constructor<?> configClassCreator, Method processConfigurationClass, BeanDefinitionRegistry registry, Environment environment) {
 		LOGGER.info("[PolarisJavaAgent] success to inject bootstrap bean definitions for module {}", getModule());
-	}
-
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public void onApplicationStartup(Object configurationParser, Constructor<?> configClassCreator, Method processConfigurationClass, BeanDefinitionRegistry registry, Environment environment) {
-		LOGGER.info("[PolarisJavaAgent] success to inject application bean definitions for module {}", getModule());
-		if (null != ClassUtils.getClazz("feign.RequestInterceptor",
-				Thread.currentThread().getContextClassLoader())) {
-			Object feignAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, FeignAutoConfiguration.class, "feignAutoConfiguration");
-			ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, feignAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
-			registry.registerBeanDefinition("feignAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
-					FeignAutoConfiguration.class).getBeanDefinition());
-		}
-		Object routerAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, RouterAutoConfiguration.class, "routerAutoConfiguration");
-		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, routerAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
-		registry.registerBeanDefinition("routerAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
-				RouterAutoConfiguration.class).getBeanDefinition());
 		Object polarisNearByRouterProperties = ReflectionUtils.invokeConstructor(configClassCreator, PolarisNearByRouterProperties.class, "polarisNearByRouterProperties");
 		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisNearByRouterProperties, Constant.DEFAULT_EXCLUSION_FILTER);
 		registry.registerBeanDefinition("polarisNearByRouterProperties", BeanDefinitionBuilder.genericBeanDefinition(
@@ -102,30 +90,46 @@ public class RouterBeanInjector implements BeanInjector {
 		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisMetadataRouterProperties, Constant.DEFAULT_EXCLUSION_FILTER);
 		registry.registerBeanDefinition("polarisMetadataRouterProperties", BeanDefinitionBuilder.genericBeanDefinition(
 				PolarisMetadataRouterProperties.class).getBeanDefinition());
-		Object polarisCircuitBreakerBootstrapConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, PolarisCircuitBreakerBootstrapConfiguration.class, "polarisCircuitBreakerBootstrapConfiguration");
-		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisCircuitBreakerBootstrapConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
-		registry.registerBeanDefinition("polarisCircuitBreakerBootstrapConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
-				PolarisCircuitBreakerBootstrapConfiguration.class).getBeanDefinition());
-		if (null != ClassUtils.getClazz("reactor.core.publisher.Mono", Thread.currentThread().getContextClassLoader())
-				&& null != ClassUtils.getClazz("reactor.core.publisher.Flux", Thread.currentThread()
-				.getContextClassLoader())) {
-			Object reactivePolarisCircuitBreakerAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, ReactivePolarisCircuitBreakerAutoConfiguration.class, "reactivePolarisCircuitBreakerAutoConfiguration");
-			ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, reactivePolarisCircuitBreakerAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
-			registry.registerBeanDefinition("reactivePolarisCircuitBreakerAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
-					ReactivePolarisCircuitBreakerAutoConfiguration.class).getBeanDefinition());
-		}
-		if (null != ClassUtils.getClazz("feign.Feign", Thread.currentThread().getContextClassLoader())
-				&& null != ClassUtils.getClazz("org.springframework.cloud.openfeign.FeignClientFactoryBean", Thread.currentThread()
-				.getContextClassLoader())) {
-			Object polarisCircuitBreakerFeignClientAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, PolarisCircuitBreakerFeignClientAutoConfiguration.class, "polarisCircuitBreakerFeignClientAutoConfiguration");
-			ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisCircuitBreakerFeignClientAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
-			registry.registerBeanDefinition("polarisCircuitBreakerFeignClientAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
-					PolarisCircuitBreakerFeignClientAutoConfiguration.class).getBeanDefinition());
-		}
-		Object polarisCircuitBreakerAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, PolarisCircuitBreakerAutoConfiguration.class, "polarisCircuitBreakerAutoConfiguration");
-		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisCircuitBreakerAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
-		registry.registerBeanDefinition("polarisCircuitBreakerAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
-				PolarisCircuitBreakerAutoConfiguration.class).getBeanDefinition());
 	}
 
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public void onApplicationStartup(Object configurationParser, Constructor<?> configClassCreator, Method processConfigurationClass, BeanDefinitionRegistry registry, Environment environment) {
+
+		Object routerAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, RouterAutoConfiguration.class, "routerAutoConfiguration");
+		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, routerAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
+		registry.registerBeanDefinition("routerAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
+				RouterAutoConfiguration.class).getBeanDefinition());
+		if (null != ClassUtils.getClazz("feign.RequestInterceptor",
+				Thread.currentThread().getContextClassLoader())) {
+			Object feignAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, FeignAutoConfiguration.class, "feignAutoConfiguration");
+			ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, feignAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
+			registry.registerBeanDefinition("feignAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
+					FeignAutoConfiguration.class).getBeanDefinition());
+		}
+		Object polarisRouterEndpointAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, PolarisRouterEndpointAutoConfiguration.class, "polarisRouterEndpointAutoConfiguration");
+		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisRouterEndpointAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
+		registry.registerBeanDefinition("polarisRouterEndpointAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
+				PolarisRouterEndpointAutoConfiguration.class).getBeanDefinition());
+
+		// make FeignRibbonClientAutoConfiguration later
+		Map<Object, Object> configurationClasses =  (Map<Object, Object>) ReflectionUtils.getObjectByFieldName(configurationParser, "configurationClasses");
+		Object targetConfigClass = null;
+		for (Object configClass : configurationClasses.keySet()) {
+			Object resource = ReflectionUtils.getObjectByFieldName(configClass, "resource");
+			if (resource instanceof ClassPathResource) {
+				ClassPathResource classPathResource = (ClassPathResource) resource;
+				if ("org/springframework/cloud/openfeign/ribbon/FeignRibbonClientAutoConfiguration.class".equals(classPathResource.getPath())) {
+					targetConfigClass = configurationClasses.remove(configClass);
+					break;
+				}
+			}
+		}
+		if (null != targetConfigClass) {
+			configurationClasses.put(targetConfigClass, targetConfigClass);
+		}
+
+
+	}
 }

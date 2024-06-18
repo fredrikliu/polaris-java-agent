@@ -28,9 +28,14 @@ import cn.polarismesh.agent.plugin.spring.cloud.common.Utils;
 import com.tencent.cloud.common.metadata.config.MetadataLocalProperties;
 import com.tencent.cloud.polaris.DiscoveryPropertiesAutoConfiguration;
 import com.tencent.cloud.polaris.DiscoveryPropertiesBootstrapAutoConfiguration;
+import com.tencent.cloud.polaris.contract.config.PolarisContractPropertiesAutoConfiguration;
 import com.tencent.cloud.polaris.discovery.PolarisDiscoveryAutoConfiguration;
 import com.tencent.cloud.polaris.discovery.PolarisDiscoveryClientConfiguration;
 import com.tencent.cloud.polaris.discovery.reactive.PolarisReactiveDiscoveryClientConfiguration;
+import com.tencent.cloud.polaris.router.config.RouterConfigModifierAutoConfiguration;
+import com.tencent.cloud.polaris.router.config.properties.PolarisMetadataRouterProperties;
+import com.tencent.cloud.polaris.router.config.properties.PolarisNearByRouterProperties;
+import com.tencent.cloud.polaris.router.config.properties.PolarisRuleBasedRouterProperties;
 import org.springframework.cloud.client.serviceregistry.AutoServiceRegistrationProperties;
 import com.tencent.polaris.api.config.Configuration;
 import com.tencent.cloud.polaris.endpoint.PolarisDiscoveryEndpointAutoConfiguration;
@@ -65,7 +70,10 @@ public class RegistryBeanInjector implements BeanInjector {
 	@Override
 	public void onBootstrapStartup(Object configurationParser, Constructor<?> configClassCreator, Method processConfigurationClass, BeanDefinitionRegistry registry, Environment environment) {
 		LOGGER.info("[PolarisJavaAgent] success to inject bootstrap bean definitions for module {}", getModule());
-
+		Object discoveryPropertiesBootstrapAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, DiscoveryPropertiesBootstrapAutoConfiguration.class, "discoveryPropertiesBootstrapAutoConfiguration");
+		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, discoveryPropertiesBootstrapAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
+		registry.registerBeanDefinition("discoveryPropertiesBootstrapAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
+				DiscoveryPropertiesBootstrapAutoConfiguration.class).getBeanDefinition());
 	}
 
 	@Override
@@ -98,10 +106,6 @@ public class RegistryBeanInjector implements BeanInjector {
 		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, discoveryPropertiesAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
 		registry.registerBeanDefinition("discoveryPropertiesAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
 				DiscoveryPropertiesAutoConfiguration.class).getBeanDefinition());
-		Object discoveryPropertiesBootstrapAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, DiscoveryPropertiesBootstrapAutoConfiguration.class, "discoveryPropertiesBootstrapAutoConfiguration");
-		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, discoveryPropertiesBootstrapAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
-		registry.registerBeanDefinition("discoveryPropertiesBootstrapAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
-				DiscoveryPropertiesBootstrapAutoConfiguration.class).getBeanDefinition());
 		LOGGER.info("[PolarisJavaAgent] success to inject application bean definitions for module {}", getModule());
 	}
 }

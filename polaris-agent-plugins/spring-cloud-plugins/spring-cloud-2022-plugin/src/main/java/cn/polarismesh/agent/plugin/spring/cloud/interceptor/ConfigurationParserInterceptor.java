@@ -63,6 +63,7 @@ public class ConfigurationParserInterceptor implements Interceptor {
     private boolean judge = false;
 
 	public ConfigurationParserInterceptor() {
+		beanInjectors.add(new RouterBeanInjector());
 		beanInjectors.add(new CircuitBreakerBeanInjector());
 		beanInjectors.add(new RateLimitBeanInjector());
 		beanInjectors.add(new CommonBeanInjector());
@@ -70,7 +71,6 @@ public class ConfigurationParserInterceptor implements Interceptor {
 		beanInjectors.add(new RegistryBeanInjector());
 		beanInjectors.add(new RpcEnhancementBeanInjector());
 		beanInjectors.add(new PolarisContextBeanInjector());
-		beanInjectors.add(new RouterBeanInjector());
 		beanInjectors.add(new LoadbalancerBeanInjector());
 		beanInjectors.add(new ConfigBeanInjector());
 		beanInjectors.add(new LosslessBeanInjector());
@@ -121,38 +121,39 @@ public class ConfigurationParserInterceptor implements Interceptor {
 			BeanDefinitionRegistry registry = (BeanDefinitionRegistry) ReflectionUtils.getObjectByFieldName(target, "registry");
 			Environment environment = (Environment) ReflectionUtils.getObjectByFieldName(target, "environment");
 			for (BeanInjector beanInjector : beanInjectors) {
-				if (!(beanInjector instanceof RouterBeanInjector)) {
-					LOGGER.info("[PolarisJavaAgent] start to inject application bean definitions in module {}", beanInjector.getModule());
-					beanInjector.onApplicationStartup(target, constructor, processConfigurationClass, registry, environment);
-				}
+//				if (!(beanInjector instanceof RouterBeanInjector)) {
+//					LOGGER.info("[PolarisJavaAgent] start to inject application bean definitions in module {}", beanInjector.getModule());
+//					beanInjector.onApplicationStartup(target, constructor, processConfigurationClass, registry, environment);
+//				}
+				beanInjector.onApplicationStartup(target, constructor, processConfigurationClass, registry, environment);
 			}
 			LOGGER.info("[PolarisJavaAgent] successfully injected spring cloud tencent application bean definitions");
 
 		}
 	}
 
-	@Override
-	public void before(Object target, Object[] args) {
-		Set<?> candidates = (Set<?>) args[0];
-		BeanDefinitionHolder beanDefinitionHolder = (BeanDefinitionHolder) candidates.iterator().next();
-		if (isMainBeanDefinition(beanDefinitionHolder)) {
-			Class<?> clazz = ClassUtils.getClazz("org.springframework.context.annotation.ConfigurationClass", null);
-			Constructor<?> constructor = ReflectionUtils.accessibleConstructor(clazz, Class.class, String.class);
-			Method processConfigurationClass = ReflectionUtils.findMethod(target.getClass(), "processConfigurationClass", clazz, Predicate.class);
-			ReflectionUtils.makeAccessible(processConfigurationClass);
-
-			BeanDefinitionRegistry registry = (BeanDefinitionRegistry) ReflectionUtils.getObjectByFieldName(target, "registry");
-			Environment environment = (Environment) ReflectionUtils.getObjectByFieldName(target, "environment");
-			for (BeanInjector beanInjector : beanInjectors) {
-				if ((beanInjector instanceof RouterBeanInjector)) {
-					LOGGER.info("[PolarisJavaAgent] start to inject application bean definitions in module {}", beanInjector.getModule());
-					beanInjector.onApplicationStartup(target, constructor, processConfigurationClass, registry, environment);
-				}
-			}
-			LOGGER.info("[PolarisJavaAgent] successfully injected spring cloud tencent application bean definitions");
-
-		}
-	}
+//	@Override
+//	public void before(Object target, Object[] args) {
+//		Set<?> candidates = (Set<?>) args[0];
+//		BeanDefinitionHolder beanDefinitionHolder = (BeanDefinitionHolder) candidates.iterator().next();
+//		if (isMainBeanDefinition(beanDefinitionHolder)) {
+//			Class<?> clazz = ClassUtils.getClazz("org.springframework.context.annotation.ConfigurationClass", null);
+//			Constructor<?> constructor = ReflectionUtils.accessibleConstructor(clazz, Class.class, String.class);
+//			Method processConfigurationClass = ReflectionUtils.findMethod(target.getClass(), "processConfigurationClass", clazz, Predicate.class);
+//			ReflectionUtils.makeAccessible(processConfigurationClass);
+//
+//			BeanDefinitionRegistry registry = (BeanDefinitionRegistry) ReflectionUtils.getObjectByFieldName(target, "registry");
+//			Environment environment = (Environment) ReflectionUtils.getObjectByFieldName(target, "environment");
+//			for (BeanInjector beanInjector : beanInjectors) {
+//				if ((beanInjector instanceof RouterBeanInjector)) {
+//					LOGGER.info("[PolarisJavaAgent] start to inject application bean definitions in module {}", beanInjector.getModule());
+//					beanInjector.onApplicationStartup(target, constructor, processConfigurationClass, registry, environment);
+//				}
+//			}
+//			LOGGER.info("[PolarisJavaAgent] successfully injected spring cloud tencent application bean definitions");
+//
+//		}
+//	}
 
 
 }

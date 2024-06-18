@@ -61,7 +61,10 @@ public class PolarisContextBeanInjector implements BeanInjector {
 	@Override
 	public void onBootstrapStartup(Object configurationParser,
 			Constructor<?> configClassCreator, Method processConfigurationClass, BeanDefinitionRegistry registry, Environment environment) {
-
+		Object polarisContextBootstrapAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, PolarisContextBootstrapAutoConfiguration.class, "polarisContextBootstrapAutoConfiguration");
+		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisContextBootstrapAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
+		registry.registerBeanDefinition("polarisContextBootstrapAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
+				PolarisContextBootstrapAutoConfiguration.class).getBeanDefinition());
 		LOGGER.info("[PolarisJavaAgent] success to inject bootstrap bean definitions for module {}", getModule());
 	}
 
@@ -76,10 +79,7 @@ public class PolarisContextBeanInjector implements BeanInjector {
 		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisContextPostConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
 		registry.registerBeanDefinition("polarisContextPostConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
 				PolarisContextPostConfiguration.class).getBeanDefinition());
-		Object polarisContextBootstrapAutoConfiguration = ReflectionUtils.invokeConstructor(configClassCreator, PolarisContextBootstrapAutoConfiguration.class, "polarisContextBootstrapAutoConfiguration");
-		ReflectionUtils.invokeMethod(processConfigurationClass, configurationParser, polarisContextBootstrapAutoConfiguration, Constant.DEFAULT_EXCLUSION_FILTER);
-		registry.registerBeanDefinition("polarisContextBootstrapAutoConfiguration", BeanDefinitionBuilder.genericBeanDefinition(
-				PolarisContextBootstrapAutoConfiguration.class).getBeanDefinition());
+
 		LOGGER.info("[PolarisJavaAgent] success to inject application bean definitions for module {}", getModule());
 	}
 }
