@@ -57,7 +57,7 @@ jobs:
         id: build
         run: |
           export use_docker_env=false
-          pushd polaris-agent-build/bin
+          cd polaris-agent-build/bin
           bash ./build.sh
           bash ./build_example_docker.sh ${{ github.event.inputs.subdir }}
 

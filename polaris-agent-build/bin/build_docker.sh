@@ -8,7 +8,7 @@ set -e
 version=$(xmllint --xpath "//*[local-name()='project']/*[local-name()='properties']/*[local-name()='revision']/text()" ../../pom.xml)
 echo "${version}" > version.txt
 
-sh ./build.sh
+bash ./build.sh
 
 docker_tag=$1
 
@@ -36,4 +36,4 @@ if [ ${pre_release} == 0 ]; then
   extra_tags="-t ${docker_repository}/polaris-javaagent-init:latest"
 fi
 
-docker buildx build -f ./Dockerfile -t ${docker_repository}/polaris-javaagent-init:${docker_tag}  --build-arg version=${version} ${extra_tags} --platform ${platforms} --push ./
+#docker buildx build -f ./Dockerfile -t ${docker_repository}/polaris-javaagent-init:${docker_tag}  --build-arg version=${version} ${extra_tags} --platform ${platforms} --push ./

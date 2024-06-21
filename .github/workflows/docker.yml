@@ -54,6 +54,6 @@ jobs:
         id: build
         run: |
           export use_docker_env=false
-          pushd polaris-agent-build/bin
+          cd polaris-agent-build/bin
           bash ./build_docker.sh ${{ steps.get_version.outputs.VERSION }}
 
