@@ -46,7 +46,9 @@ public class PluginNameFilter implements PluginFilter {
 
     private static Set<String> getLoadablePluginNames() {
         String enablePlugins = ConfigManager.INSTANCE.getConfigValue(ConfigManager.KEY_PLUGIN_ENABLE);
+        logger.info("Enable plugins: " + enablePlugins);
         enablePlugins = appendSpringCloudPluginNameIfNeeded(enablePlugins);
+        logger.info("Enable plugins after appendSpringCloudPluginNameIfNeeded: " + enablePlugins);
         if (StringUtils.isEmpty(enablePlugins)) {
             return Collections.emptySet();
         }
@@ -101,9 +103,18 @@ public class PluginNameFilter implements PluginFilter {
                     } else {
                         enablePlugins = springCloudPluginName;
                     }
+                } else {
+                    logger.warn("No compatible Spring Cloud version found for Spring Boot version: " + versionStr);
                 }
             } else {
                 logger.warn("Cannot get Spring Boot Version from MANIFEST.");
+            }
+        } else {
+            if (!ReflectionUtils.checkClassExists("org.springframework.cloud.configuration.SpringBootVersionVerifier")) {
+                logger.warn("Did not find Spring Boot Version verifier.");
+            }
+            if (!ReflectionUtils.checkClassExists("org.springframework.boot.SpringBootVersion")) {
+                logger.warn("Did not find Spring Boot Version.");
             }
         }
         return enablePlugins;
