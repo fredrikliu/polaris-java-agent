@@ -18,7 +18,7 @@
 package cn.polarismesh.agent.core.bootstrap.entry;
 
 import cn.polarismesh.agent.core.bootstrap.entry.utils.AgentDirUtils;
-
+import cn.polarismesh.agent.core.bootstrap.entry.PolarisInitProperties;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -58,6 +58,8 @@ public class BootStrap {
             Method premain = clazz.getMethod("premain", String.class, Instrumentation.class, String.class);
             premain.invoke(null, agentArgs, instrumentation, agentDirPath);
             System.out.println("[Bootstrap] javaagent inject successfully");
+            PolarisInitProperties polarisInitProperties = new PolarisInitProperties();
+            polarisInitProperties.initialize();
         } catch (Exception e) {
             String errMsg = e.getMessage();
             if (e instanceof InvocationTargetException) {
